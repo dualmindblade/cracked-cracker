@@ -1,6 +1,6 @@
 {
     "targetAddresses": [ "bc1qsrsrlkckce907dqt3sfpefv2llxqlrc7f8xwnt", "bc1qyj4ay0ppe477jnmtlwrtc74qekx57lkhyg0kj9", "bc1qtjs352k0u7gr4s9cjwsw0rkakgmlgsp65ggma9" ],
     "mnemonicPatterns": [
-        "garage (pair,frog) ripple pretty patrol blood desert this blouse (right,wrong,kitten) love faith"
+        "(garage,car,garden) (pair,frog) ripple pretty patrol blood desert this blouse (right,wrong,kitten) love faith"
     ]
 }

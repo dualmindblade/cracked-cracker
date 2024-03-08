@@ -24,6 +24,16 @@ const wordSet = new Set(wordList);
 
 const choiceReg = /^\(([a-z,]+)\)$/g;
 
+//fuck off javascript
+function doThingOnRegexWithoutMutating(regex, functionName, ...arguments) {
+    const toExecute = regex[functionName];
+    const result = toExecute.call(regex, ...arguments);
+    regex.lastIndex = 0;
+    return result;
+}
+
+choiceReg.test()
+
 fs.readFile(process.argv[2], {encoding: "utf-8"}, (err, data) => {
     if(err) throw err;
     const spec = JSON.parse(data);
@@ -36,8 +46,7 @@ function validateWord(word) {
 }
 
 function extractChoices(value) {
-    choiceReg.lastIndex = 0;
-    const commaSep = choiceReg.exec(value)[1];
+    const commaSep = doThingOnRegexWithoutMutating(choiceReg, "exec", value)[1];
     const words = commaSep.split(",");
     words.forEach(validateWord);
     return words;
@@ -69,7 +78,7 @@ function parseWordPattern(wordPattern) {
     if(wordPattern === "*") {
         return wordList;
     }
-    if(choiceReg.test(wordPattern)) {
+    if(doThingOnRegexWithoutMutating(choiceReg, "test", wordPattern)) {
         const result = extractChoices(wordPattern);
         result.forEach(validateWord);
         return result;
