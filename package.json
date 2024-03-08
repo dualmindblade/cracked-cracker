@@ -1,0 +1,17 @@
+{
+  "name": "btc-crack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "thing.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node thing.js searchSpec.json",
+    "scratch": "node scratch.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bip39": "^3.1.0",
+    "bip84": "^0.2.7"
+  }
+}
