@@ -32,8 +32,6 @@ function doThingOnRegexWithoutMutating(regex, functionName, ...arguments) {
     return result;
 }
 
-choiceReg.test()
-
 fs.readFile(process.argv[2], {encoding: "utf-8"}, (err, data) => {
     if(err) throw err;
     const spec = JSON.parse(data);
