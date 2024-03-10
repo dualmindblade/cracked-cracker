@@ -36,7 +36,12 @@ fs.readFile(process.argv[2], {encoding: "utf-8"}, (err, data) => {
     if(err) throw err;
     const spec = JSON.parse(data);
     validateSpec(spec);
+    const startTime = performance.now();    
     spec.mnemonicPatterns.forEach(p => processPattern(p, spec.targetAddresses));
+    const endTime = performance.now();
+    const minutes = Math.floor((endTime - startTime)/60000);
+    const seconds = Math.floor(((endTime - startTime)%60000)/1000).toFixed(0);
+    console.log("Completed in: " + minutes + " minutes " + seconds + " seconds.");
 });
 
 function validateWord(word) {
