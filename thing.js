@@ -3,25 +3,6 @@ const { wordlists: { english: wordList }, validateMnemonic } = require("bip39");
 const fs = require("fs");
 const wordSet = new Set(wordList);
 
-//const match = "bc1q4tjpnkxcfdanu084ugz4p3xjkveeldf62a4xkm";
-
-//const root = new bip84.fromMnemonic("garage pair ripple pretty patrol blood desert this blouse right love faith");
-// for(let j = 0; j < 100; j++)
-// for(let i = 0; i< 100; i++) {
-//     //root.coinType = i;
-    // const rootAccount = root.deriveAccount(j);
-    // const account = new bip84.fromZPrv(rootAccount);
-    // const address1 = account.getAddress(i, true);
-    // const address2 = account.getAddress(i);
-    // const pk = account
-//     if([address1, address2].includes( match)) {
-//         console.log("!!!!!!!!");
-//         break;
-//     }
-// }
-
-
-
 const choiceReg = /^\(([a-z,]+)\)$/g;
 
 //fuck off javascript
@@ -36,8 +17,12 @@ fs.readFile(process.argv[2], {encoding: "utf-8"}, (err, data) => {
     if(err) throw err;
     const spec = JSON.parse(data);
     validateSpec(spec);
-    const startTime = performance.now();    
-    spec.mnemonicPatterns.forEach(p => processPattern(p, spec.targetAddresses));
+    const startTime = performance.now();
+    for(let p of spec.mnemonicPatterns) {
+        if(processPattern(p, spec.targetAddresses, !!spec.exodusDesktopMode)) {
+            return;
+        }
+    }
     const endTime = performance.now();
     const minutes = Math.floor((endTime - startTime)/60000);
     const seconds = Math.floor(((endTime - startTime)%60000)/1000).toFixed(0);
@@ -98,7 +83,27 @@ function getPatternCardinality(pattern) {
     return first.length * getPatternCardinality(rest);
 }
 
-function processPattern(pattern, targetAddresses) {
+function getFirstAddress(mnemonic) {
+    const root = new bip84.fromMnemonic(mnemonic);
+    const rootAccount = root.deriveAccount(0);
+    const account = new bip84.fromZPrv(rootAccount);
+    return account.getAddress(0);
+}
+
+function invertStridePermutation(array, stride) {
+    const result = [];
+    let k = 0;
+    for(let s = 0; s < stride; s++) {
+        for(let i = s; i < array.length; i+= stride) {
+            result.push(array[i]);
+            //result[i] = array[k];
+            k++;
+        }
+    }
+    return result;
+}
+
+function processPattern(pattern, targetAddresses, exodusMode = false) {
     const patternArray = parseMnemonicPattern(pattern);
     const cardinality = getPatternCardinality(patternArray);
     console.log(`Processing pattern: ${pattern} with cardinality ${cardinality}.`);
@@ -106,23 +111,31 @@ function processPattern(pattern, targetAddresses) {
     let iteration = 1;
     for(let mnemonic of getChoices(patternArray)) {
         //we might want to validate the choices but validateMnemonic doesn't match exodus behavior
-        console.log(mnemonic);
-        const root = new bip84.fromMnemonic(mnemonic);
-        const rootAccount = root.deriveAccount(0);
-        const account = new bip84.fromZPrv(rootAccount);
-        const address = account.getAddress(0);
-        console.log(address);
-        if(targets.has(address)) {
+        const addresses = validateMnemonic(mnemonic) ? [[mnemonic, getFirstAddress(mnemonic)]] : [];
+        if(exodusMode) {
+            const alternateMnemonic = invertStridePermutation(mnemonic.split(" "), 3).join(" ");
+            if(validateMnemonic(alternateMnemonic)) {
+                addresses.push([alternateMnemonic, getFirstAddress(alternateMnemonic)]);
+            }
+        }
+        for(let [mnemonic, address] of addresses) {
+            console.log(`Valid mnemonic (${iteration} of ${cardinality}): ${mnemonic}: ${address}`);
+        }
+        const matches = addresses.filter(([_, address]) => targets.has(address));
+        if(matches.length > 0) {
             console.log("We're rich, rich I tells ya!!!");
-            console.log(`Matching seed phrase: ${mnemonic}`);
-            console.log(`Matching address: ${address}`);
-            return;
+            for(let [mnemonic, match] of matches) {
+                console.log(`Matching seed phrase: ${mnemonic}`);
+                console.log(`Matching address: ${match}`);
+            }
+            return true;
         }
         //process.stdout.clearLine(0);
         //process.stdout.cursorTo(0);
         //process.stdout.write(`Checking ${iteration} of ${cardinality} mnemonics.`);
         iteration++;
     }
+    return false;
 }
 
 function* getChoices(pattern) {
