@@ -1,7 +1,7 @@
 const bpi39 = require("bip39");
 const bip84 = require("bip84"); //requires node-options="--openssl-legacy-provider", use npm run
 
-
+console.log(null ?? "hello");
 const newPhrase = bpi39.generateMnemonic();
 
 //"garage pretty desert right pair patrol this love ripple blood blouse faith";

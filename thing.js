@@ -3,12 +3,13 @@ const { wordlists: { english: wordList }, validateMnemonic } = require("bip39");
 const fs = require("fs");
 const wordSet = new Set(wordList);
 
-const choiceReg = /^\(([a-z,]+)\)$/g;
+const choiceReg = /\(([a-z,]+)\)/g;
+const listReg = /^{([a-z0-9]+)}$/g;
 
 //fuck off javascript
-function doThingOnRegexWithoutMutating(regex, functionName, ...arguments) {
+function doThingOnRegexWithoutMutating(regex, functionName, ...args) {
     const toExecute = regex[functionName];
-    const result = toExecute.call(regex, ...arguments);
+    const result = toExecute.call(regex, ...args);
     regex.lastIndex = 0;
     return result;
 }
@@ -19,7 +20,7 @@ fs.readFile(process.argv[2], {encoding: "utf-8"}, (err, data) => {
     validateSpec(spec);
     const startTime = performance.now();
     for(let p of spec.mnemonicPatterns) {
-        if(processPattern(p, spec.targetAddresses, !!spec.exodusDesktopMode)) {
+        if(processPattern(p, spec.targetAddresses, spec.wordLists ?? {}, !!spec.exodusDesktopMode)) {
             return;
         }
     }
@@ -34,10 +35,14 @@ function validateWord(word) {
 }
 
 function extractChoices(value) {
-    const commaSep = doThingOnRegexWithoutMutating(choiceReg, "exec", value)[1];
+    const commaSep = getFirstCaptureGroup(value, choiceReg);
     const words = commaSep.split(",");
     words.forEach(validateWord);
     return words;
+}
+
+function getFirstCaptureGroup(value, regex) {
+    return doThingOnRegexWithoutMutating(regex, "exec", value)[1];
 }
 
 function validateStringArray(stringArray, errorMessage) {
@@ -54,15 +59,15 @@ function validateSpec(spec) {
     validateStringArray(spec.mnemonicPatterns, "Spec must provide a list of mnemonic patterns.");
 }
 
-function parseMnemonicPattern(pattern) {
+function parseMnemonicPattern(pattern, wordLists) {
     const words = pattern.split(" ").filter(x => x.length > 0);
     if(words.length != 12) {
         throw new Error(`Patterns must have 12 parts. Invalid pattern: ${pattern}.`);
     }
-    return words.map(parseWordPattern);
+    return words.map(word => parseWordPattern(word, wordLists));
 }
 
-function parseWordPattern(wordPattern) {
+function parseWordPattern(wordPattern, wordLists) {
     if(wordPattern === "*") {
         return wordList;
     }
@@ -70,6 +75,15 @@ function parseWordPattern(wordPattern) {
         const result = extractChoices(wordPattern);
         result.forEach(validateWord);
         return result;
+    }
+    if(doThingOnRegexWithoutMutating(listReg, "test", wordPattern)) {
+        const listName = getFirstCaptureGroup(wordPattern, listReg);
+        const wordList = wordLists[listName];
+        if(!Array.isArray(wordList)) {
+            throw new Error(`Word list named ${listName} was not provided in the spec.`);
+        }
+        wordList.forEach(validateWord);
+        return wordList;
     }
     validateWord(wordPattern);
     return [ wordPattern ];
@@ -103,8 +117,8 @@ function invertStridePermutation(array, stride) {
     return result;
 }
 
-function processPattern(pattern, targetAddresses, exodusMode = false) {
-    const patternArray = parseMnemonicPattern(pattern);
+function processPattern(pattern, targetAddresses, wordLists, exodusMode = false) {
+    const patternArray = parseMnemonicPattern(pattern, wordLists);
     const cardinality = getPatternCardinality(patternArray);
     console.log(`Processing pattern: ${pattern} with cardinality ${cardinality}.`);
     const targets = new Set(targetAddresses);
