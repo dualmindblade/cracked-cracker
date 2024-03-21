@@ -10,6 +10,7 @@ console.log(bpi39.validateMnemonic(newPhrase));
 
 const phraseArray = newPhrase.split(" ");
 
+
 function permuteArray(array, stride) {
     const result = [];
     console.log(array.length);

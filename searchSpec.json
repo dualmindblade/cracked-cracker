@@ -4,7 +4,7 @@
         "{chapter3} {chapter10} {chapter8} {chapter11} {chapter7} {chapter12} {chapter5} {chapter6} {chapter9} {chapter2} {chapter4} {chapter1}"
     ],
     "wordLists": {
-        "chapter1": [ "surprise", "duck","sound","desert","snake","tiny","predict","foot","perfect","about" ],
+        "chapter1": [ "surprise"],
         "chapter2": [ "faith" ],
         "chapter3": [ "blouse" ],
         "chapter4": [ "blood" ],
@@ -13,9 +13,10 @@
         "chapter7": [ "patrol" ],
         "chapter8": [ "pair" ],
         "chapter9": [ "right" ],
-        "chapter10": [ "pretty", "earth" ],
-        "chapter11": [ "desert", "balance" ],
+        "chapter10": [ "pretty"],
+        "chapter11": [ "desert"],
         "chapter12": [ "garage" ]
     },
-    "exodusDesktopMode": true
+    "exodusDesktopMode": false,
+    "allPermutations": true
 }

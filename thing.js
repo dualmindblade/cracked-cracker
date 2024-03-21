@@ -20,7 +20,7 @@ fs.readFile(process.argv[2], {encoding: "utf-8"}, (err, data) => {
     validateSpec(spec);
     const startTime = performance.now();
     for(let p of spec.mnemonicPatterns) {
-        if(processPattern(p, spec.targetAddresses, spec.wordLists ?? {}, !!spec.exodusDesktopMode)) {
+        if(processPattern(p, spec.targetAddresses, spec.wordLists ?? {}, !!spec.exodusDesktopMode, !!spec.allPermutations)) {
             return;
         }
     }
@@ -89,12 +89,12 @@ function parseWordPattern(wordPattern, wordLists) {
     return [ wordPattern ];
 }
 
-function getPatternCardinality(pattern) {
+function getPatternCardinality(pattern, numPerms = 1) {
     if(pattern.length == 1) {
         return pattern[0].length;
     }
     const [first, ...rest] = pattern;
-    return first.length * getPatternCardinality(rest);
+    return numPerms * first.length * getPatternCardinality(rest);
 }
 
 function getFirstAddress(mnemonic) {
@@ -117,13 +117,18 @@ function invertStridePermutation(array, stride) {
     return result;
 }
 
-function processPattern(pattern, targetAddresses, wordLists, exodusMode = false) {
+function numPerms(arrLength) {
+    if(arrLength === 0) return 1;
+    return arrLength * numPerms(arrLength - 1);
+}
+
+function processPattern(pattern, targetAddresses, wordLists, exodusMode = false, allPerms = false) {
     const patternArray = parseMnemonicPattern(pattern, wordLists);
-    const cardinality = getPatternCardinality(patternArray);
+    const cardinality = getPatternCardinality(patternArray, allPerms ? numPerms(patternArray.length) : 1);
     console.log(`Processing pattern: ${pattern} with cardinality ${cardinality}.`);
     const targets = new Set(targetAddresses);
     let iteration = 1;
-    for(let mnemonic of getChoices(patternArray)) {
+    for(let mnemonic of allPerms ? getAllPermChoices(patternArray) : getChoices(patternArray)) {
         //we might want to validate the choices but validateMnemonic doesn't match exodus behavior
         const addresses = validateMnemonic(mnemonic) ? [[mnemonic, getFirstAddress(mnemonic)]] : [];
         if(exodusMode) {
@@ -152,6 +157,14 @@ function processPattern(pattern, targetAddresses, wordLists, exodusMode = false)
     return false;
 }
 
+function* getAllPermChoices(pattern) {
+    for(let choice of getChoices(pattern)) {
+        for(let p of allPermutations(choice.split(" "))) {
+            yield p.join(" ");
+        }
+    }
+}
+
 function* getChoices(pattern) {
     const [start, ...rest] = pattern;
     if(rest.length > 0) {
@@ -164,6 +177,20 @@ function* getChoices(pattern) {
     else {
         for(let choice of start) {
             yield choice;
+        }
+    }
+}
+
+function* allPermutations(arr) {
+    const [first, ...rest] = arr;
+    if(rest.length === 0) {
+        yield [first];
+    }
+    else {
+        for(let p of allPermutations(rest)) {
+            for(let i = 0; i < rest.length + 1; i++) {
+                yield [...p.slice(0, i), first, ...p.slice(i)];
+            }
         }
     }
 }
